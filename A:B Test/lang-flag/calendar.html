@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calender</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="page-calendar">
+
+  <header>
+    <div class="header-inner">
+      <a href="calendar.html" class="logo-wrap">
+        <img src="images/logo/logo.svg" alt="camping logo">
+      </a>
+      <nav class="header-actions">
+        <div class="lang-switch">
+          <button class="icon-btn lang-toggle" type="button" aria-label="Sprache wechseln">
+            <img src="images/icon/de.svg" alt="Deutsch" width="24" height="24">
+          </button>
+          <div class="lang-dropdown">
+            <button class="lang-option" type="button" data-lang="en">
+              <img src="images/icon/gb.svg" alt="English" width="24" height="24">
+            </button>
+          </div>
+        </div>
+        <button class="icon-btn" type="button" aria-label="Warenkorb öffnen">
+          <svg width="24" height="24" viewBox="0 0 30 26" fill="none" aria-hidden="true" focusable="false">
+            <path d="M6.01717 25.3333C5.41717 25.3333 4.88384 25.15 4.41717 24.7833C3.95051 24.4167 3.62828 23.9444 3.45051 23.3667L0.0505051 11.0333C-0.0606061 10.6111 0.0116162 10.2222 0.267172 9.86667C0.522727 9.51111 0.872727 9.33333 1.31717 9.33333H7.65051L13.5172 0.6C13.6283 0.422222 13.7838 0.277778 13.9838 0.166667C14.1838 0.0555556 14.3949 0 14.6172 0C14.8394 0 15.0505 0.0555556 15.2505 0.166667C15.4505 0.277778 15.6061 0.422222 15.7172 0.6L21.5838 9.33333H27.9838C28.4283 9.33333 28.7783 9.51111 29.0338 9.86667C29.2894 10.2222 29.3616 10.6111 29.2505 11.0333L25.8505 23.3667C25.6727 23.9444 25.3505 24.4167 24.8838 24.7833C24.4172 25.15 23.8838 25.3333 23.2838 25.3333H6.01717ZM5.98384 22.6667H23.3172L26.2505 12H3.05051L5.98384 22.6667ZM16.5338 19.2167C17.0561 18.6944 17.3172 18.0667 17.3172 17.3333C17.3172 16.6 17.0561 15.9722 16.5338 15.45C16.0116 14.9278 15.3838 14.6667 14.6505 14.6667C13.9172 14.6667 13.2894 14.9278 12.7672 15.45C12.2449 15.9722 11.9838 16.6 11.9838 17.3333C11.9838 18.0667 12.2449 18.6944 12.7672 19.2167C13.2894 19.7389 13.9172 20 14.6505 20C15.3838 20 16.0116 19.7389 16.5338 19.2167ZM10.8838 9.33333H18.3838L14.6172 3.73333L10.8838 9.33333Z" fill="#1a2112"/>
+          </svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="content">
+      <h1>Wähle dein Zeitraum</h1>
+
+      <div class="card">
+        <div class="calendar" id="calendar" aria-label="Datumsbereich auswählen"></div>
+
+        <p class="date-summary" id="dateSummary" aria-live="polite" hidden>
+          <span id="dateText"></span>
+        </p>
+
+        <button class="btn-continue" id="btnContinue" type="button" disabled>
+          Datum Auswählen
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <nav class="footer-inner">
+      <a href="#impressum">Impressum</a>
+      <a href="#datenschutz">Datenschutzbestimmung</a>
+      <a href="#agb">AGB</a>
+    </nav>
+  </footer>
+
+<script>
+  document.querySelectorAll('.lang-switch').forEach(ls => {
+    const toggle = ls.querySelector('.lang-toggle');
+    const dropdown = ls.querySelector('.lang-dropdown');
+
+    toggle.addEventListener('click', (e) => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+
+    dropdown.querySelectorAll('.lang-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        dropdown.classList.remove('open');
+      });
+    });
+  });
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.lang-dropdown.open').forEach(d => d.classList.remove('open'));
+  });
+</script>
+
+<script>
+(function() {
+  const DE_MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const DE_DAYS_SHORT = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+
+  let currentYear = 2026;
+  let currentMonth = 5; // 0-indexed: June
+
+  // Default selection: June 1–7, 2026
+  let rangeStart = new Date(2026, 5, 1);
+  let rangeEnd   = new Date(2026, 5, 7);
+  let selecting  = false; // true after first click, waiting for end
+
+  function toMidnight(d) {
+    const r = new Date(d); r.setHours(0,0,0,0); return r;
+  }
+
+  function pad2(n) { return String(n).padStart(2,'0'); }
+
+  function formatDate(d) {
+    return pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.' + d.getFullYear();
+  }
+
+  function isSameDay(a, b) {
+    return a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  }
+
+  function inRange(d, s, e) {
+    return d > s && d < e;
+  }
+
+  function render() {
+    const container = document.getElementById('calendar');
+    const today = toMidnight(new Date());
+
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay  = new Date(currentYear, currentMonth+1, 0);
+
+    // ISO week: Mon=0..Sun=6
+    let startDow = (firstDay.getDay() + 6) % 7;
+
+    let html = '<div class="cal-header">';
+    html += `<button class="cal-nav prev" id="prevMonth">&#8249;</button>`;
+    html += `<span class="cal-title">${DE_MONTHS[currentMonth]} ${currentYear}</span>`;
+    html += `<button class="cal-nav next" id="nextMonth">&#8250;</button>`;
+    html += '</div>';
+
+    html += '<table class="cal-grid"><thead><tr>';
+    DE_DAYS_SHORT.forEach(d => { html += `<th>${d}</th>`; });
+    html += '</tr></thead><tbody>';
+
+    let day = 1;
+    const totalDays = lastDay.getDate();
+
+    for (let row = 0; row < 6; row++) {
+      if (day > totalDays) break;
+      html += '<tr>';
+      for (let col = 0; col < 7; col++) {
+        const cellIndex = row * 7 + col;
+        if (cellIndex < startDow || day > totalDays) {
+          // Outside current month
+          const outsideDate = cellIndex < startDow
+            ? new Date(currentYear, currentMonth, 1 - (startDow - cellIndex))
+            : new Date(currentYear, currentMonth+1, day - totalDays);
+          outsideDate.setHours(0,0,0,0);
+
+          let cellClass = '';
+          let btnClass = 'day-btn outside';
+
+          if (rangeStart && rangeEnd) {
+            const s = toMidnight(rangeStart), e = toMidnight(rangeEnd);
+            if (isSameDay(outsideDate, s)) { btnClass += ' range-start'; cellClass = 'range-start-cell'; }
+            else if (isSameDay(outsideDate, e)) { btnClass += ' range-end'; cellClass = 'range-end-cell'; }
+            else if (inRange(outsideDate, s, e)) { btnClass += ' range-mid'; cellClass = 'range-mid-cell'; }
+          }
+
+          html += `<td class="${cellClass}"><button class="${btnClass}" data-ts="${outsideDate.getTime()}">${outsideDate.getDate()}</button></td>`;
+        } else {
+          const thisDate = new Date(currentYear, currentMonth, day);
+          thisDate.setHours(0,0,0,0);
+
+          let btnClass = 'day-btn';
+          let cellClass = '';
+
+          if (isSameDay(thisDate, today)) btnClass += ' today';
+
+          if (rangeStart && rangeEnd) {
+            const s = toMidnight(rangeStart), e = toMidnight(rangeEnd);
+            if (isSameDay(thisDate, s)) { btnClass += ' range-start'; cellClass = 'range-start-cell'; }
+            else if (isSameDay(thisDate, e)) { btnClass += ' range-end'; cellClass = 'range-end-cell'; }
+            else if (inRange(thisDate, s, e)) { btnClass += ' range-mid'; cellClass = 'range-mid-cell'; }
+          } else if (rangeStart && !rangeEnd) {
+            if (isSameDay(thisDate, rangeStart)) { btnClass += ' range-start'; }
+          }
+
+          html += `<td class="${cellClass}"><button class="${btnClass}" data-ts="${thisDate.getTime()}">${day}</button></td>`;
+          day++;
+        }
+      }
+      html += '</tr>';
+      // advance day past outside cells at start
+      if (row === 0 && startDow > 0) { /* already handled */ }
+    }
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    document.getElementById('prevMonth').addEventListener('click', () => {
+      currentMonth--;
+      if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+      render();
+    });
+    document.getElementById('nextMonth').addEventListener('click', () => {
+      currentMonth++;
+      if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+      render();
+    });
+
+    container.querySelectorAll('.day-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ts = parseInt(btn.dataset.ts, 10);
+        const clicked = new Date(ts);
+        clicked.setHours(0,0,0,0);
+
+        if (!selecting || !rangeStart) {
+          rangeStart = clicked;
+          rangeEnd = null;
+          selecting = true;
+        } else {
+          if (clicked < rangeStart) {
+            rangeEnd = rangeStart;
+            rangeStart = clicked;
+          } else if (isSameDay(clicked, rangeStart)) {
+            rangeEnd = clicked;
+          } else {
+            rangeEnd = clicked;
+          }
+          selecting = false;
+        }
+        updateSummary();
+        render();
+      });
+    });
+  }
+
+  function updateSummary() {
+    const summary = document.getElementById('dateSummary');
+    const text    = document.getElementById('dateText');
+    const btn     = document.getElementById('btnContinue');
+
+    if (rangeStart && rangeEnd) {
+      summary.hidden = false;
+      text.innerHTML = `<strong>Von:</strong> <time datetime="${rangeStart.toISOString().slice(0,10)}">${formatDate(rangeStart)}</time> &rarr; <strong>Bis:</strong> <time datetime="${rangeEnd.toISOString().slice(0,10)}">${formatDate(rangeEnd)}</time>`;
+      btn.disabled = false;
+      btn.removeAttribute('aria-disabled');
+    } else {
+      summary.hidden = true;
+      btn.disabled = true;
+      btn.setAttribute('aria-disabled', 'true');
+    }
+  }
+
+  render();
+  updateSummary();
+
+  document.getElementById('btnContinue').addEventListener('click', () => {
+    if (rangeStart && rangeEnd) {
+      const params = new URLSearchParams({
+        from: rangeStart.getTime(),
+        to:   rangeEnd.getTime(),
+      });
+      location.href = 'products.html?' + params.toString();
+    }
+  });
+})();
+</script>
+</body>
+</html>
